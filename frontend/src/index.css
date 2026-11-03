@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Paleta kolorów (Design Tokens) */
+  --bg-app: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --bg-header: #0F172A;
+  --bg-subtle: #F8FAFC;
+
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #475569; /* Kontrast >= 4.5:1 (WCAG AA) na jasnym tle */
+
+  --color-primary: #4F46E5;
+  --color-primary-hover: #4338CA;
+  --bg-primary-soft: #EEF2FF;
+  --border-primary: #C7D2FE;
+
+  --color-success: #059669;
+  --color-success-hover: #047857;
+  --bg-success: #ECFDF5;
+  --border-success: #A7F3D0;
+
+  --color-occupied: #64748B;
+  --bg-occupied: #F1F5F9;
+  --border-occupied: #CBD5E1;
+
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --bg-danger: #FEF2F2;
+  --border-danger: #FECACA;
+
+  --color-warning: #D97706;
+  --bg-warning: #FFFBEB;
+  --border-warning: #FDE68A;
+
+  --border-default: #E2E8F0;
+
+  /* Promienie zaokrągleń (8 / 12 / 16 px) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Cienie (3 poziomy) */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.14), 0 4px 8px -4px rgba(15, 23, 42, 0.08);
+
+  /* Skala odstępów (4 px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Typografia */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-app);
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-size: 0.9375rem; /* 15px bazowo na mobile, 16px na desktopie */
+    overflow-x: hidden;
+    min-width: 320px;
+  }
+
+  @media (min-width: 640px) {
+    body {
+      font-size: 1rem; /* 16px */
+    }
+  }
+
+  /* Widoczny focus ring (2 px indigo) dla dostępności klawiaturowej */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="switch"]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Ukośny wzór w kreski dla scalonej kolumny pralki w naprawie */
+.maintenance-stripes {
+  background-color: #FEF2F2;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(220, 38, 38, 0.06),
+    rgba(220, 38, 38, 0.06) 10px,
+    rgba(254, 242, 242, 0.9) 10px,
+    rgba(254, 242, 242, 0.9) 20px
+  );
+}
+
+/* Mikro-interakcja kart i przycisków (150-200 ms) */
+.interactive-lift {
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 160ms ease,
+              border-color 160ms ease;
+}
+
+.interactive-lift:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.interactive-lift:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Cienie oparte o design tokens */
+.ds-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-default);
+}
+
+.ds-modal {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
