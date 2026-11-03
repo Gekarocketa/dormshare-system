@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password_hash String
+  full_name     String
+  room_number   String
+  role          String   // "STUDENT" | "PORTER"
+  created_at    DateTime @default(now())
+
+  laundry_bookings LaundryBooking[]
+  student_loans    EquipmentLoan[]  @relation("StudentLoans")
+  porter_loans     EquipmentLoan[]  @relation("PorterLoans")
+}
+
+model Resource {
+  id          Int     @id @default(autoincrement())
+  name        String
+  category    String  // "WASHING_MACHINE" | "EQUIPMENT"
+  status      String  // "AVAILABLE" | "BORROWED" | "MAINTENANCE"
+  description String?
+
+  laundry_bookings LaundryBooking[]
+  equipment_loans  EquipmentLoan[]
+}
+
+model LaundryBooking {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  resource_id  Int
+  booking_date String   // "YYYY-MM-DD"
+  time_slot    String   // "14:00 - 16:00", "16:00 - 18:00", "18:00 - 20:00", "20:00 - 22:00"
+  status       String   // "ACTIVE" | "CANCELLED" | "COMPLETED"
+  created_at   DateTime @default(now())
+
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_date, resource_id, time_slot])
+}
+
+model EquipmentLoan {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  resource_id Int
+  porter_id   Int
+  borrowed_at DateTime  @default(now())
+  due_at      DateTime
+  returned_at DateTime?
+  status      String    // "ACTIVE" | "RETURNED" | "OVERDUE"
+
+  user     User     @relation("StudentLoans", fields: [user_id], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+  porter   User     @relation("PorterLoans", fields: [porter_id], references: [id], onDelete: Cascade)
+}
+
