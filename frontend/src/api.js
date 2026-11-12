@@ -353,6 +353,7 @@ export const api = {
       throw err;
     }
 
+    
     const conflict = store.bookings.find(
       (b) =>
         b.resource_id === Number(resourceId) &&

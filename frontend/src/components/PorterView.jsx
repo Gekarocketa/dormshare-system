@@ -124,6 +124,7 @@ export default function PorterView({ showToast, syncVersion, onDataChange }) {
     }
   };
 
+  
   const handleReturn = async (item) => {
     const previousLoanSnapshot = item.activeLoan ? { ...item.activeLoan } : null;
     try {

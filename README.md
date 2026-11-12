@@ -25,7 +25,7 @@ Główne funkcjonalności systemu:
 ### Struktura projektu
 ```text
 dormshare/
-├── frontend/               # Aplikacja kliencka SPA (React + Vite)
+├── frontend/               # Aplikacja kliencka SPA(React + Vite)
 │   ├── src/
 │   │   ├── components/     # Komponenty UI (kalendarz, tabele, nawigacja)
 │   │   ├── pages/          # Widoki (Panel Studenta, Panel Portiera, Logowanie)

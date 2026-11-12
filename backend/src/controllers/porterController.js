@@ -7,6 +7,7 @@ async function getPorterDashboard(req, res) {
   try {
     const now = new Date();
     const nowMs = now.getTime();
+    
 
     // Automatycznie oznacz wypożyczenia po terminie (due_at < now) jako OVERDUE
     await prisma.equipmentLoan.updateMany({
@@ -310,6 +311,7 @@ async function updateResourceStatus(req, res) {
       data: { status: nextStatus },
     });
 
+
     return res.json({
       message: `${updated.name}: zmieniono status na „${
         updated.status === 'AVAILABLE' ? 'Sprawna' : 'W naprawie'
@@ -323,6 +325,7 @@ async function updateResourceStatus(req, res) {
     });
   }
 }
+
 
 module.exports = {
   getPorterDashboard,

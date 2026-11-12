@@ -15,6 +15,7 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
+
 /**
  * Synchronizuje status przeterminowanych wypożyczeń na podstawie due_at (= wydano + 3h)
  * względem aktualnego czasu, aby oba widoki (Mieszkaniec i Portiernia) miały identyczny stan.
@@ -243,6 +244,7 @@ async function createLaundryBooking(req, res) {
         throw err;
       }
 
+      
       const createdBooking = await tx.laundryBooking.create({
         data: {
           user_id: user.id,
