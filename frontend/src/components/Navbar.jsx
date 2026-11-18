@@ -6,6 +6,8 @@ export default function Navbar({
   studentTab,
   onSelectStudentTab,
   onLogoutClick,
+  userLabel = 'Pokój 214',
+  userTitle,
   availableEquipmentCount,
   totalEquipmentCount,
 }) {
@@ -39,13 +41,14 @@ export default function Navbar({
             <div
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-semibold text-slate-100"
               title={
-                isStudent
+                userTitle ||
+                (isStudent
                   ? 'Zalogowany mieszkaniec: Yevhen Zaimenko (Pokój 214)'
-                  : 'Konto demonstracyjne: Pokój 214 / Portiernia'
+                  : 'Konto demonstracyjne: Pokój 214 / Portiernia')
               }
             >
               <span className="w-2 h-2 rounded-full bg-[#059669]" aria-hidden="true" />
-              <span>Pokój 214</span>
+              <span>{userLabel}</span>
             </div>
 
             {/* Przycisk Wyloguj (ghost) */}

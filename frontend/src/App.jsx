@@ -2,10 +2,32 @@ import React, { useState, useCallback, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import StudentView from './components/StudentView';
 import PorterView from './components/PorterView';
+import LoginPage from './pages/LoginPage';
 import { api } from './api';
 
+const SESSION_KEY = 'dormshare.session';
+
+function loadSession() {
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(user) {
+  try {
+    if (user) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    else window.sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Brak dostępu do sessionStorage — sesja działa tylko w pamięci
+  }
+}
+
 export default function App() {
-  const [role, setRole] = useState('STUDENT'); // 'STUDENT' | 'PORTER'
+  const [sessionUser, setSessionUser] = useState(() => loadSession());
+  const [role, setRole] = useState(() => loadSession()?.role || 'STUDENT'); // 'STUDENT' | 'PORTER'
   const [studentTab, setStudentTab] = useState('LAUNDRY'); // 'LAUNDRY' | 'EQUIPMENT'
   const [toast, setToast] = useState(null); // { id, type: 'success' | 'error' | 'warning', message, undoLabel, onUndo, duration }
   const [equipmentCounts, setEquipmentCounts] = useState({ available: 2, total: 4 });
@@ -46,13 +68,30 @@ export default function App() {
     setSyncVersion((v) => v + 1);
   }, []);
 
-  const handleLogoutClick = () => {
+  const handleLogin = (user) => {
+    saveSession(user);
+    setSessionUser(user);
+    setRole(user.role);
+    setStudentTab('LAUNDRY');
     showToast({
-      type: 'warning',
-      message: 'Wersja demonstracyjna: sesja użytkownika Pokój 214 jest zawsze aktywna.',
-      duration: 4000,
+      type: 'success',
+      message:
+        user.role === 'PORTER'
+          ? `Zalogowano: Portiernia (${user.full_name})`
+          : `Zalogowano: Pokój ${user.room_number} (${user.full_name})`,
+      duration: 3000,
     });
   };
+
+  const handleLogoutClick = () => {
+    saveSession(null);
+    setSessionUser(null);
+    setToast(null);
+  };
+
+  if (!sessionUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F1F5F9] text-[#0F172A] overflow-x-hidden">
@@ -62,6 +101,10 @@ export default function App() {
         studentTab={studentTab}
         onSelectStudentTab={setStudentTab}
         onLogoutClick={handleLogoutClick}
+        userLabel={
+          sessionUser.role === 'PORTER' ? 'Portiernia' : `Pokój ${sessionUser.room_number}`
+        }
+        userTitle={`Zalogowano: ${sessionUser.full_name} (${sessionUser.email})`}
         availableEquipmentCount={equipmentCounts.available}
         totalEquipmentCount={equipmentCounts.total}
       />
