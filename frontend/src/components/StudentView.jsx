@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api, getTodayDateString } from '../api';
+import WeekStrip from './WeekStrip';
 
 function formatPolishDate(dateStr) {
   if (!dateStr) return '';
@@ -47,6 +48,11 @@ function getSlotTimingState(selectedDate, slotStr, todayStr) {
     return { isPast: false, isCurrent: true, canCancel: false };
   }
   return { isPast: false, isCurrent: false, canCancel: true };
+}
+
+// Stabilna referencja dla paska tygodniowego (czy slot danego dnia już minął)
+function isSlotPastForDate(dateStr, slotStr) {
+  return getSlotTimingState(dateStr, slotStr, getTodayDateString()).isPast;
 }
 
 function getEquipmentIcon(name = '') {
@@ -439,6 +445,15 @@ export default function StudentView({
 
       {/* Główna karta: Pasek daty + Siatka rezerwacji */}
       <div className="ds-card overflow-hidden">
+        {/* Tygodniowy pasek wyboru dnia */}
+        <WeekStrip
+          todayStr={todayStr}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          isSlotPast={isSlotPastForDate}
+          syncVersion={`${syncVersion}-${data.userActiveBookingsCount}-${data.bookings.length}`}
+        />
+
         {/* Pasek daty */}
         <div className="px-3 sm:px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex flex-col lg:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-center">
