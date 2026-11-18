@@ -123,6 +123,14 @@ W aktualnej wersji projektu zaimplementowano pełny przepływ głównej operacji
 
 ---
 
+## 6a. Interfejs użytkownika (Frontend)
+* **Ekran logowania** (`frontend/src/pages/LoginPage.jsx`) — walidacja e-maila i hasła, komunikaty błędów, szybki wybór konta demonstracyjnego. Sesja jest trzymana w `sessionStorage`, a przycisk **„Wyloguj”** wraca do ekranu logowania.
+  * Mieszkaniec: `student214@dorm.pl` / `demo123`
+  * Portiernia: `portier@dorm.pl` / `demo123`
+* **Tygodniowy pasek dni** (`frontend/src/components/WeekStrip.jsx`) nad grafikiem pralni — 7 kolejnych dni z liczbą wolnych terminów i znacznikiem własnej rezerwacji; na telefonie przewijany poziomo.
+
+---
+
 ## 7. Autorzy i podział ról w zespole
 
 * **Yevhen Zaimenko** — Backend, architektura REST API, logika biznesowa rezerwacji i autoryzacja.
