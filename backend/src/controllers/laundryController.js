@@ -15,6 +15,35 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
+function formatUtcDateString(date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Oblicza początek (poniedziałek) i koniec (niedziela) tygodnia kalendarzowego
+ * dla podanej daty w formacie "YYYY-MM-DD".
+ */
+function getWeekRange(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const target = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = target.getUTCDay(); // 0 = niedziela, 1 = poniedziałek, ...
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const monday = new Date(target);
+  monday.setUTCDate(target.getUTCDate() + diffToMonday);
+
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  return {
+    weekStart: formatUtcDateString(monday),
+    weekEnd: formatUtcDateString(sunday),
+  };
+}
+
 
 /**
  * Synchronizuje status przeterminowanych wypożyczeń na podstawie due_at (= wydano + 3h)
@@ -40,7 +69,9 @@ async function getLaundrySlots(req, res) {
   try {
     await syncOverdueLoans();
 
-    const date = req.query.date || getTodayDateString();
+    const rawDate = typeof req.query.date === 'string' ? req.query.date : '';
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : getTodayDateString();
+    const { weekStart, weekEnd } = getWeekRange(date);
     const requestedUserId = req.query.userId ? Number(req.query.userId) : null;
 
     let currentUser = null;
@@ -91,6 +122,10 @@ async function getLaundrySlots(req, res) {
           where: {
             user_id: currentUser.id,
             status: 'ACTIVE',
+            booking_date: {
+              gte: weekStart,
+              lte: weekEnd,
+            },
           },
         })
       : 0;
@@ -186,6 +221,35 @@ async function createLaundryBooking(req, res) {
       });
     }
 
+    const normalizedDate = String(bookingDate);
+    const normalizedSlot = String(timeSlot);
+
+    if (!TIME_SLOTS.includes(normalizedSlot)) {
+      return res.status(400).json({
+        message: 'Nieprawidłowy przedział godzinowy',
+      });
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate)) {
+      return res.status(400).json({
+        message: 'Nieprawidłowy format daty rezerwacji (wymagany YYYY-MM-DD).',
+      });
+    }
+
+    const endTime = normalizedSlot.split(' - ')[1].trim();
+    const slotEnd = new Date(`${normalizedDate}T${endTime}:00`);
+    if (
+      normalizedDate < getTodayDateString() ||
+      Number.isNaN(slotEnd.getTime()) ||
+      slotEnd.getTime() <= Date.now()
+    ) {
+      return res.status(422).json({
+        message: 'Nie można dokonać rezerwacji na termin wsteczny',
+      });
+    }
+
+    const { weekStart, weekEnd } = getWeekRange(normalizedDate);
+
     const result = await prisma.$transaction(async (tx) => {
       let user = null;
       if (userId) {
@@ -220,6 +284,10 @@ async function createLaundryBooking(req, res) {
         where: {
           user_id: user.id,
           status: 'ACTIVE',
+          booking_date: {
+            gte: weekStart,
+            lte: weekEnd,
+          },
         },
       });
 
@@ -289,18 +357,41 @@ async function createLaundryBooking(req, res) {
 async function cancelLaundryBooking(req, res) {
   try {
     const bookingId = Number(req.params.id);
-
-    const existing = await prisma.laundryBooking.findUnique({
-      where: { id: bookingId },
-    });
-
-    if (!existing) {
-      return res.status(404).json({ message: 'Nie znaleziono rezerwacji o podanym ID.' });
+    if (!Number.isInteger(bookingId) || bookingId <= 0) {
+      return res.status(400).json({ message: 'Nieprawidłowy identyfikator rezerwacji.' });
     }
 
-    const updated = await prisma.laundryBooking.update({
-      where: { id: bookingId },
-      data: { status: 'CANCELLED' },
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.laundryBooking.findUnique({
+        where: { id: bookingId },
+      });
+
+      if (!existing) {
+        const err = new Error('Nie znaleziono rezerwacji o podanym ID.');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      if (existing.status !== 'ACTIVE') {
+        const err = new Error('Rezerwacja została już anulowana');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const startTime = existing.time_slot.split(' - ')[0].trim();
+      const slotStart = new Date(`${existing.booking_date}T${startTime}:00`);
+      if (slotStart.getTime() - Date.now() < 30 * 60 * 1000) {
+        const err = new Error(
+          'Rezerwację można anulować najpóźniej na 30 minut przed jej rozpoczęciem'
+        );
+        err.statusCode = 422;
+        throw err;
+      }
+
+      return tx.laundryBooking.update({
+        where: { id: bookingId },
+        data: { status: 'CANCELLED' },
+      });
     });
 
     return res.json({
@@ -308,6 +399,9 @@ async function cancelLaundryBooking(req, res) {
       booking: updated,
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error('Błąd w DELETE /api/laundry/bookings/:id:', error);
     return res.status(500).json({
       message: 'Wystąpił błąd serwera podczas anulowania rezerwacji.',

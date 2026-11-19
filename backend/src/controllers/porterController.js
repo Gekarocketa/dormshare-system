@@ -290,25 +290,45 @@ async function returnEquipment(req, res) {
 /**
  * PATCH /api/porter/resources/:id/status
  */
+const ALLOWED_RESOURCE_STATUSES = ['AVAILABLE', 'MAINTENANCE'];
+
 async function updateResourceStatus(req, res) {
   try {
     const resourceId = Number(req.params.id);
-    const { status } = req.body;
-
-    const existing = await prisma.resource.findUnique({
-      where: { id: resourceId },
-    });
-
-    if (!existing) {
-      return res.status(404).json({ message: 'Nie znaleziono zasobu o podanym ID.' });
+    if (!Number.isInteger(resourceId) || resourceId <= 0) {
+      return res.status(400).json({ message: 'Nieprawidłowy identyfikator zasobu.' });
     }
 
-    const nextStatus =
-      status || (existing.status === 'MAINTENANCE' ? 'AVAILABLE' : 'MAINTENANCE');
+    const { status } = req.body || {};
 
-    const updated = await prisma.resource.update({
-      where: { id: resourceId },
-      data: { status: nextStatus },
+    if (status !== undefined && !ALLOWED_RESOURCE_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: 'Nieprawidłowy status urządzenia. Dozwolone: AVAILABLE, MAINTENANCE',
+      });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.resource.findUnique({
+        where: { id: resourceId },
+      });
+
+      if (!existing) {
+        const err = new Error('Nie znaleziono zasobu o podanym ID.');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      const nextStatus =
+        status !== undefined
+          ? status
+          : existing.status === 'MAINTENANCE'
+            ? 'AVAILABLE'
+            : 'MAINTENANCE';
+
+      return tx.resource.update({
+        where: { id: resourceId },
+        data: { status: nextStatus },
+      });
     });
 
 
@@ -319,6 +339,9 @@ async function updateResourceStatus(req, res) {
       resource: updated,
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error('Błąd w PATCH /api/porter/resources/:id/status:', error);
     return res.status(500).json({
       message: 'Wystąpił błąd serwera podczas zmiany statusu zasobu.',

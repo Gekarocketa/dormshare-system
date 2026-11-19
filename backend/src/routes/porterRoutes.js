@@ -5,8 +5,11 @@ const {
   returnEquipment,
   updateResourceStatus,
 } = require('../controllers/porterController');
+const { requirePorterRole } = require('../middlewares/roleMiddleware');
 
 const router = express.Router();
+
+router.use(requirePorterRole);
 
 router.get('/dashboard', getPorterDashboard);
 router.post('/loans/borrow', borrowEquipment);
